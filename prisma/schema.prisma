@@ -1,0 +1,94 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+
+model Admin {
+  id        Int            @id @default(autoincrement())
+  name      String
+  email     String         @unique
+  password  String
+  role      String
+  createdAt DateTime       @default(now())
+}
+
+model Client {
+  id            Int        @id @default(autoincrement())
+  first_name    String     
+  last_name     String     
+  email         String     @unique
+  password      String    
+  phone         String     
+  city          String   
+  role          String     @default("user")  
+  job           String     @default("")
+  birthday      String     @default("")
+  createdAt     DateTime   @default(now())
+  cards         Card[] 
+  soldServices  SoldService[]  
+}
+
+model Card {
+  id               Int           @id @default(autoincrement())
+  unique_code      String        @unique
+  nfc_shap         String   
+  nfc_type         String   
+  client_id        Int?        
+  activated        Boolean  @default(false)
+  // many to one relation with Client model
+  client           Client?        @relation(fields: [client_id], references: [id], onDelete: Cascade)
+
+  // One to one relation with SoldService model
+  sold_service     SoldService? 
+  createdAt        DateTime       @default(now())
+}
+
+model Service {
+  id                  Int             @id @default(autoincrement())
+  type                String  @unique
+
+  // One to many relation with SoldService model 
+  sold_services       SoldService[]    
+
+  vCardContent        Json            @default("{}")
+
+  createdAt           DateTime        @default(now())
+}
+
+model SoldService {
+  id              Int                 @id @default(autoincrement())
+  type            String
+  service_id      Int   
+  client_id       Int   
+  card_id          Int                 @unique
+
+  // many to one relation with Service model
+  service        Service      @relation(fields: [service_id], references: [id]) 
+
+  // many to one relation with Client model 
+  client         Client       @relation(fields: [client_id], references: [id], onDelete: Cascade)  
+  
+  // one to one relation with Card model 
+  card           Card         @relation(fields: [card_id], references: [id], onDelete: Cascade)
+ 
+  vCardupdatableContent     Json?   @default("{}")
+  vCardUi                   String
+  menuUpdatableContent      Json[]
+  urlUpdatableContent       String?
+  fileUpdatableContent      String?
+
+  createdAt              DateTime             @default(now())
+}
+
+
