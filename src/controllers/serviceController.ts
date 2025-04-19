@@ -1,26 +1,31 @@
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import prisma from "../utils/db";
 import { Prisma } from "@prisma/client";
 
 //=> Get all services
 export const getAllServices = async (
   req: Request,
-  res: Response
+  res: Response,
+  next: NextFunction
 ): Promise<void> => {
-  const services = await prisma.service.findMany({
-    include: { sold_services: true },
-  });
+  try {
+    const services = await prisma.service.findMany({
+      include: { sold_services: true },
+    });
 
-  if (!services[0]) {
-    res.status(200).json({ services: [] });
-    return;
+    res.status(200).json({ services });
+  } catch (error) {
+    const err = new Error(`❌ Error in get all services`);
+    next(error);
   }
-
-  res.status(200).json({ services });
 };
 
 //=> Get one service
-export const getOneService = async (req: Request, res: Response) => {
+export const getOneService = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const params = req.params;
 
   if (!params.type) {
@@ -28,23 +33,30 @@ export const getOneService = async (req: Request, res: Response) => {
     return;
   }
 
-  const service = await prisma.service.findFirst({
-    where: { type: params.type },
-    include: { sold_services: true },
-  });
+  try {
+    const service = await prisma.service.findFirst({
+      where: { type: params.type },
+      include: { sold_services: true },
+    });
 
-  res.status(200).json({ service });
+    res.status(200).json({ service });
+  } catch (err) {
+    const error = new Error(`❌ Error in get one service`);
+    next(error);
+  }
 };
 
 //=> Create service
 export const createService = async (
   req: Request,
-  res: Response
+  res: Response,
+  next: NextFunction
 ): Promise<any> => {
   const body = req.body;
 
   if (!body.type) {
-    return res.status(400).json({ message: "All fields are required" });
+    res.status(400).json({ message: "All fields are required" });
+    return;
   }
 
   try {
@@ -53,15 +65,18 @@ export const createService = async (
     });
 
     res.status(201).json({ service });
-  } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Something went wrong while creating service" });
+  } catch (err) {
+    const error = new Error(`❌ Error in create service`);
+    next(error);
   }
 };
 
 //=> Create service
-export const updateService = async (req: Request, res: Response) => {
+export const updateService = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const body = req.body;
   const type = req.params.type;
 
@@ -92,9 +107,8 @@ export const updateService = async (req: Request, res: Response) => {
     });
 
     res.status(200).json({ service });
-  } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Something went wrong while updating service" });
+  } catch (err) {
+    const error = new Error(`❌ Error in update service`);
+    next(error);
   }
 };

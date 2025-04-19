@@ -12,6 +12,7 @@ import {
   userRegister,
 } from "../controllers/authController";
 import passport from "passport";
+import { verifyAdmin } from "../middleware/verifyAdmin";
 
 const router = express.Router();
 
@@ -32,15 +33,13 @@ router.post("/login", (req, res, next) => {
   })(req, res, next);
 });
 
-// router.route("/logout").post(logOut);
-
 router.get("/get-user", verifyJWT, getSingleUser);
 
 router.get("/user-info", getUserInfo);
 
 router.post("/check-user", verifyJWT, checkUserSoldService);
 
-router.get("/get-all-user", getAllUsers);
+router.get("/get-all-user", verifyAdmin, getAllUsers);
 
 // GOOGLE Authentication
 
@@ -91,7 +90,8 @@ router.get(
   }
 );
 
-router.post("/logout", (req, res, next) => {
+//=> logout
+router.post("/logout", verifyJWT, (req, res, next) => {
   req.logout((err) => {
     if (err) return next(err);
 
@@ -107,8 +107,8 @@ router.get("/me", (req, res) => {
   res.send(req.user || null);
 });
 
-router.put("/update-client/:email", updateUser);
+router.put("/update-client/:email", verifyAdmin, updateUser);
 
-router.delete("/delete-client/:email", deleteUser);
+router.delete("/delete-client/:email", verifyAdmin, deleteUser);
 
 export default router;

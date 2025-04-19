@@ -1,3 +1,5 @@
+import { verifyAdmin } from "./../middleware/verifyAdmin";
+import { verifyJWT } from "./../middleware/verifyJWT";
 import express from "express";
 import {
   createService,
@@ -8,7 +10,10 @@ import {
 
 const router = express.Router();
 
-router.route("/").get(getAllServices).post(createService);
+router
+  .route("/")
+  .get(verifyJWT, getAllServices)
+  .post(verifyAdmin, createService);
 
-router.route("/:type").get(getOneService).put(updateService);
+router.route("/:type").get(verifyJWT, getOneService).put(updateService);
 export default router;

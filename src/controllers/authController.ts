@@ -4,10 +4,12 @@ import { NextFunction, Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import { signInValidation, signUpValidation } from "../utils/validation";
 import { AuthenticatedRequest } from "../middleware/verifyJWT";
+import { validate as isUuid } from "uuid";
 
 export const userRegister = async (
   req: Request,
-  res: Response
+  res: Response,
+  next: NextFunction
 ): Promise<void> => {
   const body = req.body;
 
@@ -46,10 +48,9 @@ export const userRegister = async (
     });
 
     res.status(201).json(newUser);
-  } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Something went wrong while signing up", error });
+  } catch (err) {
+    const error = new Error(`❌ Error in sign up`);
+    next(error);
   }
 };
 
@@ -65,6 +66,7 @@ export const userLogin = async (
 
   if (!validation.success) {
     res.status(400).json({ message: validation.error.errors[0].message });
+    return;
   }
 
   const user = await prisma.client.findUnique({
@@ -101,10 +103,9 @@ export const userLogin = async (
       success: true,
       message: "You've signed in successfully",
     });
-  } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Something went wrong while signing in", error });
+  } catch (err) {
+    const error = new Error(`❌ Error in sign in`);
+    next(error);
   }
 };
 export const getSingleUser = async (
@@ -113,26 +114,22 @@ export const getSingleUser = async (
   next: NextFunction
 ) => {
   const userInfo = req?.user;
-  if (!userInfo?.id || isNaN(+userInfo?.id)) {
-    console.log(userInfo);
-
-    res.status(400).json({ message: "Invalid user ID" });
+  if (!isUuid(userInfo?.id)) {
+    res.status(400).json({ message: "Invalid ID format" });
     return;
   }
   try {
     const user = await prisma.client.findUnique({
-      where: { id: +userInfo?.id },
+      where: { id: userInfo?.id },
       include: {
         soldServices: true,
       },
     });
 
     res.status(200).json({ user });
-  } catch (error) {
-    res.status(500).json({
-      message: "Something went wrong while fetching single user",
-      error,
-    });
+  } catch (err) {
+    const error = new Error(`❌ Error in get one user`);
+    next(error);
   }
 };
 export const getUserInfo = async (
@@ -141,24 +138,26 @@ export const getUserInfo = async (
   next: NextFunction
 ) => {
   const userInfo = req?.user;
-  console.log(req.isAuthenticated());
 
   if (!userInfo?.email) {
     res.status(401).json({ message: "Unauthorized" });
     return;
   }
 
-  const user = await prisma.client.findFirst({
-    where: { email: userInfo?.email },
-    include: {
-      soldServices: true,
-      cards: true,
-    },
-  });
+  try {
+    const user = await prisma.client.findFirst({
+      where: { email: userInfo?.email },
+      include: {
+        soldServices: true,
+        cards: true,
+      },
+    });
 
-  console.log("from auth controller", user);
-
-  res.status(200).json({ user });
+    res.status(200).json({ user });
+  } catch (err) {
+    const error = new Error(`❌ Error in get user info`);
+    next(error);
+  }
 };
 
 export const checkUserSoldService = async (
@@ -182,10 +181,9 @@ export const checkUserSoldService = async (
     });
 
     res.status(200).json({ clientId: user?.id });
-  } catch (error) {
-    res
-      .status(500)
-      .json({ message: "Something went wrong while checking user" });
+  } catch (err) {
+    const error = new Error(`❌ Error in check user sold service`);
+    next(error);
   }
 };
 
@@ -212,16 +210,14 @@ export const getAllUsers = async (
     });
 
     if (!clients[0]) {
-      res.status(404).json({ clients: [] });
+      res.status(200).json({ clients: [] });
       return;
     }
 
     res.status(200).json({ clients });
-  } catch (error) {
-    console.log(error);
-    res
-      .status(500)
-      .json({ message: "Something went wronge while fetching all clients" });
+  } catch (err) {
+    const error = new Error(`❌ Error in get all users`);
+    next(error);
   }
 };
 
@@ -262,11 +258,9 @@ export const updateUser = async (
     });
 
     res.status(200).json({ message: "User has updated successfully" });
-  } catch (error) {
-    // console.log(error);
-    res
-      .status(500)
-      .json({ message: "Something went wronge while updating client" });
+  } catch (err) {
+    const error = new Error(`❌ Error in update user`);
+    next(error);
   }
 };
 
@@ -281,17 +275,24 @@ export const deleteUser = async (
     res.status(404).json({ message: "Missing client email" });
     return;
   }
+  const client = await prisma.client.findUnique({
+    where: { email: params.email },
+  });
 
+  if (!client?.email) {
+    res.status(404).json({ message: "This client not found" });
+    return;
+  }
   try {
+    await prisma.soldService.deleteMany({ where: { client_id: client.id } });
+
     await prisma.client.delete({
       where: { email: params?.email },
     });
 
     res.status(200).json({ message: "User has deleted successfully" });
-  } catch (error) {
-    console.log(error);
-    res
-      .status(500)
-      .json({ message: "Something went wronge while deleting client" });
+  } catch (err) {
+    const error = new Error(`❌ Error in delete user`);
+    next(error);
   }
 };

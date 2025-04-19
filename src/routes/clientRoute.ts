@@ -1,16 +1,16 @@
 import express from "express";
-import { verifyJWT } from "../middleware/verifyJWT";
 import {
   createClient,
   getAllClients,
   getOneClient,
-  // updateClient,
 } from "../controllers/clientController";
+import { verifyAdmin } from "../middleware/verifyAdmin";
+import { verifyJWT } from "../middleware/verifyJWT";
+import { verifySelfOrAdmin } from "../middleware/verifySelfOrAdmin";
 
 const router = express.Router();
 
-router.route("/").get(getAllClients).post(createClient);
-router.route("/:id").get(getOneClient);
-// router.route("/:email").get(updateClient);
+router.route("/").get(verifyAdmin, getAllClients).post(createClient);
+router.route("/:id").get(verifyJWT, verifySelfOrAdmin, getOneClient);
 
 export default router;

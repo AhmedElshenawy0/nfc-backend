@@ -1,12 +1,16 @@
-// import { SoldService } from "./../../../front-end/src/types/types";
 import jwt from "jsonwebtoken";
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import prisma from "../utils/db";
 import { v4 as uuidv4 } from "uuid";
 import { AuthenticatedRequest } from "../middleware/verifyJWT";
+import { validate as isUuid } from "uuid";
 
 //=> Verify card
-export const verifyCard = async (req: AuthenticatedRequest, res: Response) => {
+export const verifyCard = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+) => {
   const { unique_code } = req.query;
 
   try {
@@ -37,7 +41,7 @@ export const verifyCard = async (req: AuthenticatedRequest, res: Response) => {
     }
 
     const client = await prisma.client.findUnique({
-      where: { id: +card?.sold_service?.client_id },
+      where: { id: card?.sold_service?.client_id },
     });
 
     if (!client) {
@@ -65,39 +69,63 @@ export const verifyCard = async (req: AuthenticatedRequest, res: Response) => {
     }
 
     res.status(200).json({ message: "success", name: client?.first_name });
-  } catch (error) {
-    res.status(500).json({ message: "error here" });
+  } catch (err) {
+    const error = new Error(`❌ Error in verify card`);
+    next(error);
   }
 };
 
 //=> Get all cards
-export const getAllCards = async (req: Request, res: Response) => {
-  const cards = await prisma.card.findMany({ include: { client: true } });
-
-  if (!cards[0]) {
-    res.status(200).json({ cards: [] });
-    return;
+export const getAllCards = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const cards = await prisma.card.findMany({ include: { client: true } });
+    res.status(200).json({ cards });
+  } catch (err) {
+    const error = new Error(`❌ Error in get all cards`);
+    next(error);
   }
-
-  res.status(200).json({ cards });
 };
 
 //=> Get one card
-export const getOneCard = async (req: Request, res: Response) => {
+export const getOneCard = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const param = req.params;
 
-  const card = await prisma.card.findUnique({ where: { id: +param.id } });
-
-  if (!card) {
-    res.status(404).json({ message: "Card not found" });
+  if (!isUuid(param?.id)) {
+    res.status(400).json({ message: "Invalid ID format" });
     return;
   }
 
-  res.status(200).json({ card });
+  try {
+    const card = await prisma.card.findUnique({
+      where: { id: String(param.id) },
+    });
+
+    if (!card) {
+      res.status(404).json({ message: "Card not found" });
+      return;
+    }
+
+    res.status(200).json({ card });
+  } catch (err) {
+    const error = new Error(`❌ Error in get one card`);
+    next(error);
+  }
 };
 
 //=> Create card
-export const createCard = async (req: Request, res: Response) => {
+export const createCard = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const body = req.body;
 
   if (!body.nfc_shap || !body.nfc_type) {
@@ -118,35 +146,41 @@ export const createCard = async (req: Request, res: Response) => {
     });
 
     res.status(201).json({ card });
-  } catch (error) {
-    res
-      .status(200)
-      .json({ message: "Something went wrong while creating card" });
+  } catch (err) {
+    const error = new Error(`❌ Error in create card`);
+    next(error);
   }
 };
 
 //=> Update card
-export const updateCard = async (req: Request, res: Response) => {
+export const updateCard = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const body = req.body;
-  const id = req.params.id;
+  const id = req?.params?.id;
 
-  if (!id) {
-    res.status(400).json({ message: "Missing Card Id" });
+  if (!isUuid(id)) {
+    res.status(400).json({ message: "Invalid ID format" });
     return;
   }
   try {
-    const card = await prisma.card.update({ where: { id: +id }, data: body });
+    const card = await prisma.card.update({ where: { id: id }, data: body });
 
     res.status(200).json({ card });
-  } catch (error) {
-    res
-      .status(200)
-      .json({ message: "Something went wrong while Updating card" });
+  } catch (err) {
+    const error = new Error(`❌ Error in update card`);
+    next(error);
   }
 };
 
-//=> Get all cards
-export const deleteCard = async (req: Request, res: Response) => {
+//=> delete card
+export const deleteCard = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   const { unique_code } = req.params;
 
   if (!unique_code) {
@@ -167,10 +201,19 @@ export const deleteCard = async (req: Request, res: Response) => {
     await prisma.soldService.deleteMany({
       where: { card_id: card?.id },
     });
-    await prisma.card.delete({ where: { unique_code } });
+
+    await prisma.card.update({
+      where: { unique_code },
+      data: {
+        client: {
+          disconnect: true,
+        },
+      },
+    });
 
     res.status(200).json({ message: "Card has delete successfully" });
-  } catch (error) {
-    res.status(500).json({ message: "Something went wrong while delete card" });
+  } catch (err) {
+    const error = new Error(`❌ Error in delete card`);
+    next(error);
   }
 };

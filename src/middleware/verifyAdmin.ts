@@ -5,10 +5,14 @@ export const verifyAdmin = (
   req: AuthenticatedRequest,
   res: Response,
   next: NextFunction
-) => {
+): void => {
   if (req.user?.email && req.user?.role === "admin") {
-    next(); // User is admin, continue to the route
+    next();
+    return;
   } else {
-    return res.status(403).json({ message: "Access Forbidden: Admins only" });
+    console.log(req.user);
+
+    res.status(403).json({ message: "Access Forbidden: Admins only" });
+    return;
   }
 };

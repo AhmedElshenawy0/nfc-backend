@@ -1,8 +1,5 @@
-import { SoldService } from "./../../../front-end/src/types/types";
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import prisma from "../utils/db";
-import { Prisma } from "@prisma/client";
-import jwt from "jsonwebtoken";
 import cloudinary from "../utils/cloudinary";
 import { AuthenticatedRequest } from "../middleware/verifyJWT";
 import fs from "fs";
@@ -11,42 +8,59 @@ import {
   uploadMultipleImages,
   uploadSingleImage,
 } from "../utils/cloudinaryConf";
+import { validate as isUuid } from "uuid";
 
 //=> Get all services
 export const getAllSoldServices = async (
   req: Request,
-  res: Response
+  res: Response,
+  next: NextFunction
 ): Promise<void> => {
-  const services = await prisma.service.findMany({
-    include: { sold_services: true },
-  });
+  try {
+    const services = await prisma.service.findMany({
+      include: { sold_services: true },
+    });
 
-  if (!services[0]) {
-    res.status(200).json({ services: [] });
-    return;
+    if (!services[0]) {
+      res.status(200).json({ services: [] });
+      return;
+    }
+
+    res.status(200).json({ services });
+  } catch (err) {
+    const error = new Error(`❌ Error in get all sold services`);
+    next(error);
   }
-
-  res.status(200).json({ services });
 };
 
 //=> Get one service
 export const getOneSoldService = async (
   req: AuthenticatedRequest,
-  res: Response
+  res: Response,
+  next: NextFunction
 ) => {
-  const id = Number(req.params.id);
+  const id = req.params.id;
 
   if (!id) {
     res.status(400).json({ message: "Missing sold service id" });
     return;
   }
+  if (!isUuid(id)) {
+    res.status(400).json({ message: "Invalid ID format" });
+    return;
+  }
   console.log(id);
 
-  const soldServices = await prisma.soldService.findUnique({
-    where: { id: +id },
-  });
+  try {
+    const soldServices = await prisma.soldService.findUnique({
+      where: { id: id },
+    });
 
-  res.status(200).json({ soldServices });
+    res.status(200).json({ soldServices });
+  } catch (err) {
+    const error = new Error(`❌ Error in get one sold service`);
+    next(error);
+  }
 };
 
 //=> Create service
@@ -174,7 +188,8 @@ export const getOneSoldService = async (
 // };
 export const createSoldService = async (
   req: AuthenticatedRequest,
-  res: Response
+  res: Response,
+  next: NextFunction
 ): Promise<void> => {
   const { type, vCardUi, uniqueCode } = req.body;
 
@@ -184,6 +199,8 @@ export const createSoldService = async (
   }
 
   const service = await prisma.service.findFirst({ where: { type } });
+  console.log("servic", service);
+
   if (!service?.id) {
     res.status(400).json({ message: "Missing service id" });
     return;
@@ -193,6 +210,8 @@ export const createSoldService = async (
     where: { unique_code: uniqueCode },
     include: { sold_service: true },
   });
+  console.log("card", card);
+
   if (!card?.id) {
     res.status(400).json({ message: "Missing card id" });
     return;
@@ -201,8 +220,9 @@ export const createSoldService = async (
   const existingVcardContent = card.sold_service?.vCardupdatableContent as {
     name?: string;
   };
-  if (existingVcardContent?.name) {
-    res.status(400).json({ message: "This card already has a service" });
+
+  if (type === "vCard" && existingVcardContent?.name) {
+    res.status(400).json({ message: "This card already has a vCard service" });
     return;
   }
 
@@ -221,7 +241,7 @@ export const createSoldService = async (
     let menuImageUrls: string[] = [];
     let uploadedFilePath = "";
 
-    // Handle image/file uploads
+    // Handle image uploads
     const files = req.files as {
       files?: Express.Multer.File[];
       profileImage?: Express.Multer.File[];
@@ -267,10 +287,9 @@ export const createSoldService = async (
       });
     }
 
-    // Upload regular file
+    // Upload file
     if (type === "file" && files?.file?.[0]) {
       uploadedFilePath = `/uploads/${files.file[0].filename}`;
-      // optional: upload to Cloudinary and delete local file if needed
     }
 
     // Compose vCard content
@@ -311,19 +330,17 @@ export const createSoldService = async (
     });
 
     res.status(201).json({ newSoldService });
-  } catch (error) {
-    console.error("CreateSoldService Error:", error);
-    res.status(500).json({
-      message: "Something went wrong while creating sold service",
-      error,
-    });
+  } catch (err) {
+    const error = new Error(`❌ Error in create sold service`);
+    next(error);
   }
 };
 
 //=> update service
 export const updateSoldService = async (
   req: Request,
-  res: Response
+  res: Response,
+  next: NextFunction
 ): Promise<void> => {
   const id = req.params.id;
 
@@ -333,7 +350,7 @@ export const updateSoldService = async (
   }
 
   const existingService = await prisma.soldService.findFirst({
-    where: { id: +id },
+    where: { id: id },
   });
 
   if (!existingService) {
@@ -345,12 +362,11 @@ export const updateSoldService = async (
     const existingContent = (existingService!.vCardupdatableContent ??
       {}) as any;
 
-    // الملفات المرفوعة
     const files = req.files as {
       profileImage?: Express.Multer.File[];
     };
 
-    let uploadedImageUrl = existingContent.image; // default to old image
+    let uploadedImageUrl = existingContent.image;
 
     if (files?.profileImage?.[0]) {
       uploadedImageUrl = await uploadSingleImage(
@@ -359,7 +375,6 @@ export const updateSoldService = async (
       );
     }
 
-    // بناء القيم النهائية
     const updatedData = {
       name: req.body.name || existingContent.name,
       bio: req.body.bio || existingContent.bio,
@@ -377,24 +392,25 @@ export const updateSoldService = async (
     };
 
     const soldService = await prisma.soldService.update({
-      where: { id: +id },
+      where: { id: id },
       data: {
+        vCardUi: req?.body?.vCardUi || existingService?.vCardUi,
         vCardupdatableContent: updatedData,
       },
     });
 
     res.status(200).json({ soldService });
-  } catch (error) {
-    console.error("Update vCard Error:", error);
-    res
-      .status(500)
-      .json({ message: "Something went wrong while updating service" });
+  } catch (err) {
+    const error = new Error(`❌ Error in update sold service`);
+    next(error);
   }
 };
 
+//=> update menu
 export const updateMenu = async (
   req: Request,
-  res: Response
+  res: Response,
+  next: NextFunction
 ): Promise<void> => {
   const id = req.params.id;
 
@@ -415,7 +431,7 @@ export const updateMenu = async (
   }
 
   const existingService = await prisma.soldService.findUnique({
-    where: { id: +id },
+    where: { id: id },
   });
 
   if (!existingService) {
@@ -455,94 +471,15 @@ export const updateMenu = async (
     console.log("finalImages", finalImages);
 
     const soldService = await prisma.soldService.update({
-      where: { id: +id },
+      where: { id: id },
       data: {
         menuUpdatableContent: finalImages,
       },
     });
 
     res.status(200).json({ soldService });
-  } catch (error) {
-    console.error("Update Menu Error:", error);
-    res
-      .status(500)
-      .json({ message: "Something went wrong while updating menu" });
+  } catch (err) {
+    const error = new Error(`❌ Error in update menu`);
+    next(error);
   }
 };
-
-// export const updateMenu = async (req: Request, res: Response) => {
-//   const { deletedImages = [], updatedImages = [] } = req.body;
-//   const id = req.params.id;
-
-//   if (!id) {
-//     res.status(400).json({ message: "Missing service id" });
-//     return;
-//   }
-
-//   const existingService = await prisma.soldService.findFirst({
-//     where: { id: +id },
-//   });
-
-//   if (!existingService) {
-//     res.status(404).json({ message: "Service not found" });
-//     return;
-//   }
-
-//   const existingContent = (existingService.menuUpdatableContent ?? []) as string[];
-
-//   try {
-//     // 1️⃣ Delete Old Images in Parallel
-//     await Promise.all(
-//       deletedImages?.map(async (imageUrl: string) => {
-//         const publicId = imageUrl.split('/user_images/menu_images/')[1]?.split('.')[0];
-//         if (publicId) {
-//           return cloudinary.v2.uploader.destroy(`user_images/menu_images/${publicId}`);
-//         }
-//       }) ?? []
-//     );
-
-//     // 2️⃣ Upload New Images to Cloudinary
-//     const menuImageUrls = await Promise.all(
-//       updatedImages?.map(async (image: string) => {
-//         const uploadResponse = await cloudinary.v2.uploader.upload(image, {
-//           folder: "user_images/menu_images",
-//         });
-//         return uploadResponse.secure_url;
-//       }) ?? []
-//     );
-
-//     // 3️⃣ Update Database
-//     const soldService = await prisma.soldService.update({
-//       where: { id: +id },
-//       data: {
-//         menuUpdatableContent: [...existingContent, ...menuImageUrls], // Correct field
-//       },
-//     });
-
-//     res.status(200).json({ soldService });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ message: "Something went wrong while updating service" });
-//   }
-// };
-
-// export const uploadFile = async (req: Request, res: Response) => {
-//   try {
-//     const { fileName, fileType, serviceId } = req.body;
-
-//     // Ensure file exists
-//     if (!req.file) return res.status(400).json({ message: "No file uploaded" });
-
-//     const filePath = `/uploads/${req.file.filename}`; // Save path
-
-//     // Store file metadata in database
-//     const newFile = await prisma.soldService.create({
-//       data: { fileName, fileType, filePath, serviceId },
-//     });
-
-//     res.status(201).json(newFile);
-//   } catch (error) {
-//     console.error("File upload error:", error);
-//     res.status(500).json({ message: "Internal Server Error" });
-//   }
-// };

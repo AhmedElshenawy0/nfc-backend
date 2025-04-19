@@ -1,4 +1,8 @@
-import express from "express";
+import express, {
+  type Request,
+  type Response,
+  type NextFunction,
+} from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import authRoute from "../src/routes/authRoute";
@@ -12,6 +16,7 @@ import session from "express-session";
 import bodyParser from "body-parser";
 import "./utils/passport";
 import path from "path";
+import { errorHandler } from "./middleware/ErrorHandler";
 dotenv.config();
 
 const app = express();
@@ -20,7 +25,7 @@ const port = process.env.PORT || 5000;
 //=> Middleware
 app.use(
   cors({
-    // origin: process.env.CLIENT_URL, // Hnt=> Change to env
+    origin: process.env.CLIENT_URL,
     credentials: true,
   })
 );
@@ -56,11 +61,13 @@ app.use("/api/soldServices", soldServiceRoute);
 
 // Serve uploaded files statically
 app.use("/uploads", express.static("uploads"));
-// app.use(express.static(path.join(__dirname, "../public")));
+app.use(express.static(path.join(__dirname, "../public")));
 
-// app.get("*", (req, res) => {
-//   res.sendFile(path.join(__dirname, "../public/index.html"));
-// });
+app.use(errorHandler as express.ErrorRequestHandler);
+
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname, "../public/index.html"));
+});
 //=> Start server
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);

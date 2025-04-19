@@ -1,3 +1,4 @@
+import { verifyAdmin } from "./../middleware/verifyAdmin";
 import express from "express";
 import {
   createSoldService,
@@ -8,8 +9,8 @@ import {
 } from "../controllers/soldController";
 import { verifyJWT } from "../middleware/verifyJWT";
 import multer from "multer";
-import { Request, Response, NextFunction } from "express";
 import path from "path";
+import { verifySoldServiceOwnerOrAdmin } from "../middleware/verifySoldServiceOwnerOrAdmin";
 
 const router = express.Router();
 
@@ -19,7 +20,8 @@ const storage = multer.diskStorage({
     cb(null, "uploads/");
   },
   filename: (req, file, cb) => {
-    cb(null, Date.now() + path.extname(file.originalname)); // Unique filename
+    // Unique filename
+    cb(null, Date.now() + path.extname(file.originalname));
   },
 });
 
@@ -32,13 +34,15 @@ const uploadMiddleware = upload.fields([
 
 router
   .route("/")
-  .get(getAllSoldServices)
-  .post(uploadMiddleware, createSoldService);
+  .get(verifyAdmin, getAllSoldServices)
+  .post(uploadMiddleware, verifyJWT, createSoldService);
 
-// router.route("/").get(getAllSoldServices).post(createSoldService);
-
-router.get("/get-one/:id", getOneSoldService);
-router.route("/:id").put(uploadMiddleware, updateSoldService);
-router.route("/menu/:id").put(uploadMiddleware, updateMenu);
+router.get("/get-one/:id", verifySoldServiceOwnerOrAdmin, getOneSoldService);
+router
+  .route("/:id")
+  .put(uploadMiddleware, verifySoldServiceOwnerOrAdmin, updateSoldService);
+router
+  .route("/menu/:id")
+  .put(uploadMiddleware, verifySoldServiceOwnerOrAdmin, updateMenu);
 
 export default router;
