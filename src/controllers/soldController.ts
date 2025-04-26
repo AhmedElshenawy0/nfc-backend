@@ -331,6 +331,7 @@ export const createSoldService = async (
 
     res.status(201).json({ newSoldService });
   } catch (err) {
+    console.log(err);
     const error = new Error(`❌ Error in create sold service`);
     next(error);
   }
