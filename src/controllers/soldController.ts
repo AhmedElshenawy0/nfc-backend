@@ -307,6 +307,7 @@ export const createSoldService = async (
       buttonBackground: req.body.buttonBackground,
       image: profilePictureUrl,
     };
+    console.log("vCardContent", vCardContent);
 
     const newSoldService = await prisma.soldService.create({
       data: {
