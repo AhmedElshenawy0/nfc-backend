@@ -59,14 +59,15 @@ export const verifyCard = async (
         message: "Authentication missing, Please Sign in",
         type: card?.nfc_type,
         cardId: card?.id,
+        cliientId: client?.id,
       });
       return;
     }
 
-    if (userSession?.email !== client?.email) {
-      res.status(403).json({ message: "You're not authorized" });
-      return;
-    }
+    // if (userSession?.email !== client?.email) {
+    //   res.status(403).json({ message: "You're not authorized" });
+    //   return;
+    // }
 
     res.status(200).json({ message: "success", name: client?.first_name });
   } catch (err) {
