@@ -5,11 +5,11 @@ import express, {
 } from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import authRoute from "../src/routes/authRoute";
-import cardRoute from "../src/routes/cardRoute";
-import clientRoute from "../src/routes/clientRoute";
-import serviceRoute from "../src/routes/serviceRoute";
-import soldServiceRoute from "../src/routes/soldRoute";
+import authRoute from "./routes/authRoute";
+import cardRoute from "./routes/cardRoute";
+import clientRoute from "./routes/clientRoute";
+import serviceRoute from "./routes/serviceRoute";
+import soldServiceRoute from "./routes/soldRoute";
 import cookieParser from "cookie-parser";
 import passport from "passport";
 import session from "express-session";
