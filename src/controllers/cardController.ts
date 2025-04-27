@@ -135,13 +135,10 @@ export const createCard = async (
   }
 
   try {
-    const unique_code = uuidv4();
-
     const card = await prisma.card.create({
       data: {
         nfc_shap: body.nfc_shap,
         nfc_type: body.nfc_type,
-        unique_code,
         client_id: body.client_id || null,
       },
     });

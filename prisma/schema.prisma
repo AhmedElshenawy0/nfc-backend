@@ -47,8 +47,8 @@ model Client {
 }
 
 model Card {
-  id            String   @id @default(uuid()) @db.Uuid 
-  unique_code      String        @unique
+  id            String          @id @default(uuid()) @db.Uuid 
+  unique_code      String       @default(uuid())  @unique
   nfc_shap         String   
   nfc_type         String   
   client_id        String?       @db.Uuid        
