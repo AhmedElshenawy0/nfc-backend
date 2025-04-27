@@ -61,13 +61,9 @@ app.use("/api/soldServices", soldServiceRoute);
 
 // Serve uploaded files statically
 app.use("/uploads", express.static("uploads"));
-app.use(express.static(path.join(__dirname, "../public")));
 
 app.use(errorHandler as express.ErrorRequestHandler);
 
-app.get("*", (req, res) => {
-  res.sendFile(path.join(__dirname, "../public/index.html"));
-});
 //=> Start server
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
