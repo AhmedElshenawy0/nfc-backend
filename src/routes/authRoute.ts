@@ -77,7 +77,7 @@ router.get(
       console.log(req.user);
 
       return res.redirect(
-        `http://localhost:5173/signin?error=${encodeURIComponent(
+        `http://nfc-signup.ddns.net/signin?error=${encodeURIComponent(
           "Invalid email or password"
         )}`
       );
@@ -85,7 +85,7 @@ router.get(
     console.log(req.user);
 
     res.redirect(
-      `http://localhost:5173/signin?auth=true&gCardType=${cardType}&gCardId=${cardId}`
+      `http://nfc-signup.ddns.net/signin?auth=true&gCardType=${cardType}&gCardId=${cardId}`
     );
   }
 );
