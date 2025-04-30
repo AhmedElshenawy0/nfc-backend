@@ -221,6 +221,30 @@ export const getAllUsers = async (
   }
 };
 
+export const getUserRole = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  const { email } = req.params;
+
+  if (!email) {
+    res.status(400).json({ message: "There is no email" });
+    return;
+  }
+
+  try {
+    const client = await prisma.client.findUnique({
+      where: { email },
+    });
+
+    res.status(200).json({ client });
+  } catch (err) {
+    const error = new Error(`❌ Error in get user role`);
+    next(error);
+  }
+};
+
 export const updateUser = async (
   req: AuthenticatedRequest,
   res: Response,

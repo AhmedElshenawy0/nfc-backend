@@ -6,6 +6,7 @@ import {
   getAllUsers,
   getSingleUser,
   getUserInfo,
+  getUserRole,
   logOut,
   updateUser,
   userLogin,
@@ -40,6 +41,8 @@ router.get("/user-info", getUserInfo);
 router.post("/check-user", verifyJWT, checkUserSoldService);
 
 router.get("/get-all-user", verifyAdmin, getAllUsers);
+
+router.get("/check-user-role/:email", getUserRole);
 
 // GOOGLE Authentication
 
@@ -77,7 +80,7 @@ router.get(
       console.log(req.user);
 
       return res.redirect(
-        `http://nfc-signup.ddns.net/signin?error=${encodeURIComponent(
+        `${process.env.CLIENT_URL}/signin?error=${encodeURIComponent(
           "Invalid email or password"
         )}`
       );
@@ -85,7 +88,7 @@ router.get(
     console.log(req.user);
 
     res.redirect(
-      `http://nfc-signup.ddns.net/signin?auth=true&gCardType=${cardType}&gCardId=${cardId}`
+      `${process.env.CLIENT_URL}/signin?auth=true&gCardType=${cardType}&gCardId=${cardId}`
     );
   }
 );
