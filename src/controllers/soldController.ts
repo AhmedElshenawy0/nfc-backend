@@ -258,7 +258,7 @@ export const createSoldService = async (
       );
       profilePictureUrl = uploadRes.secure_url;
       try {
-        fs.unlinkSync(files.profileImage[0].path);
+        await fs.promises.unlink(files.profileImage[0].path);
       } catch (err) {
         console.warn(
           "Failed to delete profile image:",
@@ -278,13 +278,15 @@ export const createSoldService = async (
       );
       menuImageUrls = uploadResults.map((res) => res.secure_url);
 
-      files.files.forEach((file) => {
-        try {
-          fs.unlinkSync(file.path);
-        } catch (err) {
-          console.warn("Failed to delete menu image:", file.path);
+      if (files?.files?.length) {
+        for (const file of files.files) {
+          try {
+            await fs.promises.unlink(file.path);
+          } catch (err) {
+            console.warn("Failed to delete menu image:", file.path);
+          }
         }
-      });
+      }
     }
 
     // Upload file

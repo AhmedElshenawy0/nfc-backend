@@ -63,6 +63,22 @@ app.use("/api/soldServices", soldServiceRoute);
 app.use("/uploads", express.static("uploads"));
 app.use(express.static(path.join(__dirname, "../public")));
 
+const fileSizeErrorHandler = (
+  err: any,
+  req: Request,
+  res: Response,
+  next: NextFunction
+): express.Response | void => {
+  if (err.code === "LIMIT_FILE_SIZE") {
+    return res
+      .status(400)
+      .json({ message: "Image too large. Max 3MB allowed." });
+  }
+  return next(err);
+};
+
+app.use(fileSizeErrorHandler as express.ErrorRequestHandler);
+
 app.use(errorHandler as express.ErrorRequestHandler);
 
 app.get("*", (req, res) => {
