@@ -21,6 +21,10 @@ import fs from "fs";
 
 dotenv.config();
 
+const uploadDir = path.join(process.cwd(), "uploads");
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
 const app = express();
 const port = process.env.PORT;
 
@@ -67,7 +71,9 @@ app.use("/api/services", serviceRoute);
 app.use("/api/soldServices", soldServiceRoute);
 
 // Serve uploaded files statically
-app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
+// app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
+
+app.use("/uploads", express.static(uploadDir));
 app.use(express.static(path.join(__dirname, "../public")));
 
 const fileSizeErrorHandler = (
