@@ -11,7 +11,6 @@ import { verifyJWT } from "../middleware/verifyJWT";
 import multer from "multer";
 import path from "path";
 import { verifySoldServiceOwnerOrAdmin } from "../middleware/verifySoldServiceOwnerOrAdmin";
-import fs from "fs";
 
 const router = express.Router();
 
