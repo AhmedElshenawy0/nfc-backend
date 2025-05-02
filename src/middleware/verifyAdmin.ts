@@ -6,13 +6,15 @@ export const verifyAdmin = (
   res: Response,
   next: NextFunction
 ): void => {
-  if (req.user?.email && req.user?.role === "admin") {
+  if (req?.user?.email && req?.user?.role === "admin") {
     next();
     return;
   } else {
     console.log(req.user);
 
-    res.status(403).json({ message: "Access Forbidden: Admins only" });
+    res
+      .status(403)
+      .json({ message: `Access Forbidden: Admins only ${req?.user?.role}` });
     return;
   }
 };
