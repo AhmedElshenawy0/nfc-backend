@@ -17,10 +17,17 @@ import bodyParser from "body-parser";
 import "./utils/passport";
 import path from "path";
 import { errorHandler } from "./middleware/ErrorHandler";
+import fs from "fs";
+
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT;
+
+const uploadDir = path.join(__dirname, "..", "uploads");
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
 
 //=> Middleware
 app.use(
