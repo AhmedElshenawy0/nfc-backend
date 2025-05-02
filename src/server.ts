@@ -17,19 +17,11 @@ import bodyParser from "body-parser";
 import "./utils/passport";
 import path from "path";
 import { errorHandler } from "./middleware/ErrorHandler";
-import fs from "fs";
 
 dotenv.config();
 
-// const uploadDir = path.join(process.cwd(), "uploads");
-
 const app = express();
 const port = process.env.PORT;
-
-// const uploadDir = path.join(__dirname, "..", "uploads");
-// if (!fs.existsSync(uploadDir)) {
-//   fs.mkdirSync(uploadDir, { recursive: true });
-// }
 
 //=> Middleware
 app.use(
@@ -69,10 +61,7 @@ app.use("/api/services", serviceRoute);
 app.use("/api/soldServices", soldServiceRoute);
 
 // Serve uploaded files statically
-// app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
-
-app.use("/uploads", express.static(path.join(process.cwd(), "uploads")));
-
+app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
 app.use(express.static(path.join(__dirname, "../public")));
 
 const fileSizeErrorHandler = (
