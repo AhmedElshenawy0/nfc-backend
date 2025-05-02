@@ -17,6 +17,8 @@ import bodyParser from "body-parser";
 import "./utils/passport";
 import path from "path";
 import { errorHandler } from "./middleware/ErrorHandler";
+import fs from "fs";
+
 dotenv.config();
 
 const app = express();
@@ -84,6 +86,11 @@ app.use(errorHandler as express.ErrorRequestHandler);
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "../public/index.html"));
 });
+
+const uploadDir = path.join(__dirname, "..", "uploads");
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
 //=> Start server
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
