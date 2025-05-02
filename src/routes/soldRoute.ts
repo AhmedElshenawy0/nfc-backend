@@ -11,16 +11,22 @@ import { verifyJWT } from "../middleware/verifyJWT";
 import multer from "multer";
 import path from "path";
 import { verifySoldServiceOwnerOrAdmin } from "../middleware/verifySoldServiceOwnerOrAdmin";
+import fs from "fs";
 
 const router = express.Router();
 
 // Configure storage and file destination
+const uploadPath = path.join(__dirname, "..", "uploads");
+
+if (!fs.existsSync(uploadPath)) {
+  fs.mkdirSync(uploadPath, { recursive: true });
+}
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, "uploads/");
+    cb(null, uploadPath);
   },
   filename: (req, file, cb) => {
-    // Unique filename
     cb(null, Date.now() + path.extname(file.originalname));
   },
 });
