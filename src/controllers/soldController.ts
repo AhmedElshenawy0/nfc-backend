@@ -250,20 +250,21 @@ export const createSoldService = async (
 
     // Upload vCard profile image
     if (type === "vCard" && files?.profileImage?.[0]) {
-      const uploadRes = await cloudinary.v2.uploader.upload(
-        files.profileImage[0].path,
-        {
+      const imagePath = files.profileImage[0].path;
+
+      if (fs.existsSync(imagePath)) {
+        const uploadRes = await cloudinary.v2.uploader.upload(imagePath, {
           folder: "user_images/vCard",
+        });
+        profilePictureUrl = uploadRes.secure_url;
+
+        try {
+          await fs.promises.unlink(imagePath);
+        } catch (err) {
+          console.warn("Failed to delete profile image:", imagePath);
         }
-      );
-      profilePictureUrl = uploadRes.secure_url;
-      try {
-        await fs.promises.unlink(files.profileImage[0].path);
-      } catch (err) {
-        console.warn(
-          "Failed to delete profile image:",
-          files.profileImage[0].path
-        );
+      } else {
+        console.warn("Profile image path does not exist:", imagePath);
       }
     }
 
