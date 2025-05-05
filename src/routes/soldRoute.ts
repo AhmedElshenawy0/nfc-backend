@@ -25,6 +25,8 @@ const storage = multer.diskStorage({
   },
 });
 
+console.log("form route file", path.join(__dirname, "../uploads"));
+
 const upload = multer({ storage, limits: { fileSize: 3 * 1024 * 1024 } });
 
 const uploadMiddleware = upload.fields([
