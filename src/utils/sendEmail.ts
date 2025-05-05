@@ -63,6 +63,6 @@ export const sendVerificationEmail = async (
     console.log("✅ Verification email sent.");
   } catch (err) {
     console.error("❌ Failed to send verification email:", err);
-    throw new Error("Failed to send verification email"); // Rethrow to let controller handle it if needed
+    throw new Error("Failed to send verification email");
   }
 };

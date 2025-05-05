@@ -10,10 +10,8 @@ dotenv.config();
 
 const prisma = new PrismaClient();
 
-// Define a custom user type to include isExist
 type CustomUser = Client & { isExist: boolean };
 
-// Serialize user in the session
 passport.serializeUser((user: any, done) => {
   done(null, { email: user.email, isExist: user.isExist });
 });
@@ -75,7 +73,6 @@ passport.use(
           });
         }
 
-        // User exists, pass isExist = true
         return done(null, { ...user, isExist: true } as CustomUser);
       } catch (error) {
         return done(error, undefined);

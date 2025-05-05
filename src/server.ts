@@ -61,7 +61,7 @@ app.use("/api/services", serviceRoute);
 app.use("/api/soldServices", soldServiceRoute);
 
 // Serve uploaded files statically
-app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
+app.use("/uploads", express.static(path.join(__dirname, "./uploads")));
 
 app.use(express.static(path.join(__dirname, "../public")));
 
