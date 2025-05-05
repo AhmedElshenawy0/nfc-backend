@@ -17,10 +17,17 @@ import bodyParser from "body-parser";
 import "./utils/passport";
 import path from "path";
 import { errorHandler } from "./middleware/ErrorHandler";
-
+import * as https from "https";
+import * as fs from "fs";
 dotenv.config();
 
 const app = express();
+// HINT COMMENT
+const sslOptions = {
+  key: fs.readFileSync(path.resolve(__dirname, "../ssl/private.key")),
+  cert: fs.readFileSync(path.resolve(__dirname, "../ssl/certificate.crt")),
+};
+
 const port = process.env.PORT;
 
 //=> Middleware
@@ -89,6 +96,9 @@ app.get("*", (req, res) => {
 });
 
 //=> Start server
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
-});
+
+// HINT COMMENT
+https.createServer(sslOptions, app).listen(port);
+// app.listen(port, () => {
+//   console.log(`Server running on port ${port}`);
+// });
