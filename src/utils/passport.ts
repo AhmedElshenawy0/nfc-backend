@@ -4,6 +4,8 @@ import { Strategy as LocalStrategy } from "passport-local";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { PrismaClient, Client } from "@prisma/client";
 import dotenv from "dotenv";
+import { sendVerificationEmail } from "./sendEmail";
+import { v4 as uuidv4 } from "uuid";
 dotenv.config();
 
 const prisma = new PrismaClient();
@@ -40,20 +42,37 @@ passport.use(
       clientID: process.env.GOOGLE_CLIENT_ID as string,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
       callbackURL: "/api/auth/google/callback",
+      passReqToCallback: true,
     },
-    async (accessToken, refreshToken, profile, done) => {
+    async (req, accessToken, refreshToken, profile, done) => {
       try {
         const email = profile.emails?.[0].value;
 
         if (!email) return done(null, false);
+
+        const cardType = req.cookies.cardType;
+        const cardId = req.cookies.cardId;
 
         let user = await prisma.client.findUnique({
           where: { email },
         });
 
         if (!user) {
-          // User not found, pass isExist = false
-          return done(null, { email, isExist: false } as CustomUser);
+          return done(null, false, { message: "User not found" });
+        }
+        if (!user?.emailVerified) {
+          const token = uuidv4();
+
+          await prisma.client.update({
+            where: { email: user.email },
+            data: { verificationToken: token },
+          });
+
+          await sendVerificationEmail(user.email, token, cardType, cardId);
+          return done(null, false, {
+            message:
+              "Email not verified. A new verification email has been sent.",
+          });
         }
 
         // User exists, pass isExist = true

@@ -5,6 +5,8 @@ import bcrypt from "bcryptjs";
 import { signInValidation, signUpValidation } from "../utils/validation";
 import { AuthenticatedRequest } from "../middleware/verifyJWT";
 import { validate as isUuid } from "uuid";
+import { sendVerificationEmail } from "../utils/sendEmail";
+import { v4 as uuidv4 } from "uuid";
 
 export const userRegister = async (
   req: Request,
@@ -22,7 +24,7 @@ export const userRegister = async (
   }
 
   const user = await prisma.client.findUnique({
-    where: { email: body.email },
+    where: { email: body?.email },
   });
   if (user?.first_name) {
     res.status(400).json({ message: "User is already exist. Please sign in" });
@@ -32,20 +34,30 @@ export const userRegister = async (
   try {
     //=> Hash password
     const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(body.password, salt);
+    const hashedPassword = await bcrypt.hash(body?.password, salt);
+
+    const token = uuidv4();
 
     const newUser = await prisma.client.create({
       data: {
-        first_name: body.firstName,
-        last_name: body.lastName,
-        email: body.email,
+        first_name: body?.firstName,
+        last_name: body?.lastName,
+        email: body?.email,
         password: hashedPassword,
-        phone: body.phone,
-        city: body.city,
-        birthday: body.birthday,
-        job: body.job,
+        phone: body?.phone,
+        city: body?.city,
+        birthday: body?.birthday,
+        job: body?.job,
+        verificationToken: token,
       },
     });
+
+    await sendVerificationEmail(
+      newUser?.email,
+      token,
+      body?.cardType,
+      body?.cardId
+    );
 
     res.status(201).json(newUser);
   } catch (err) {
@@ -319,4 +331,28 @@ export const deleteUser = async (
     const error = new Error(`❌ Error in delete user`);
     next(error);
   }
+};
+
+export const verifyEmail = async (
+  req: AuthenticatedRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  const { token, cardType, cardId } = req.query;
+
+  const user = await prisma.client.findFirst({
+    where: { verificationToken: token as string },
+  });
+
+  if (!user) {
+    res.status(400).json({ message: "Invalid or expired token." });
+    return;
+  }
+
+  await prisma.client.update({
+    where: { id: user.id },
+    data: { emailVerified: true, verificationToken: null },
+  });
+
+  res.status(200).json({ message: "Email verified successfully." });
 };
