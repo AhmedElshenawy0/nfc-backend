@@ -12,9 +12,7 @@ export const verifyAdmin = (
   } else {
     console.log(req.user);
 
-    res
-      .status(403)
-      .json({ message: `Access Forbidden: Admins only ${req?.user?.role}` });
+    res.status(403).json({ message: `Access Forbidden: Admins only` });
     return;
   }
 };
