@@ -23,10 +23,10 @@ dotenv.config();
 
 const app = express();
 // HINT COMMENT
-// const sslOptions = {
-//   key: fs.readFileSync(path.resolve(__dirname, "../ssl/private.key")),
-//   cert: fs.readFileSync(path.resolve(__dirname, "../ssl/certificate.crt")),
-// };
+const sslOptions = {
+  key: fs.readFileSync(path.resolve(__dirname, "../ssl/private.key")),
+  cert: fs.readFileSync(path.resolve(__dirname, "../ssl/certificate.crt")),
+};
 
 const port = process.env.PORT;
 
@@ -98,7 +98,7 @@ app.get("*", (req, res) => {
 //=> Start server
 
 // HINT COMMENT
-// https.createServer(sslOptions, app).listen(port);
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
-});
+https.createServer(sslOptions, app).listen(port);
+// app.listen(port, () => {
+//   console.log(`Server running on port ${port}`);
+// });
