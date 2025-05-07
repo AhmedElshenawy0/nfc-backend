@@ -83,7 +83,9 @@ export const getAllCards = async (
   next: NextFunction
 ) => {
   try {
-    const cards = await prisma.card.findMany({ include: { client: true } });
+    const cards = await prisma.card.findMany({
+      include: { client: true, sold_service: true },
+    });
     res.status(200).json({ cards });
   } catch (err) {
     const error = new Error(`❌ Error in get all cards`);
