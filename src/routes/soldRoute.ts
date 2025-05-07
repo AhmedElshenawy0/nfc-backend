@@ -39,7 +39,7 @@ router
   .get(verifyAdmin, getAllSoldServices)
   .post(uploadMiddleware, verifyJWT, createSoldService);
 
-router.get("/get-one/:id", verifySoldServiceOwnerOrAdmin, getOneSoldService);
+router.get("/get-one/:id", getOneSoldService);
 router
   .route("/:id")
   .put(uploadMiddleware, verifySoldServiceOwnerOrAdmin, updateSoldService);
